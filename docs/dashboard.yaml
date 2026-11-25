@@ -1,4 +1,4 @@
-# Example Energy Bill view. Paste it in: Edit dashboard > raw configuration editor.
+# Example view with Energy Bill cards only. Paste it in: Edit dashboard > raw configuration editor.
 # The month and period sensors have no state_class, so Home Assistant records no
 # long-term statistics for them. The cost graph therefore uses history-graph
 # (recorder history), not statistics-graph.
@@ -6,12 +6,6 @@ views:
   - title: Energy
     path: energy
     cards:
-      - type: energy-date-selection
-      - type: energy-distribution
-        link_dashboard: true
-      - type: energy-usage-graph
-      - type: energy-solar-graph
-      - type: energy-sources-table
       - type: entities
         title: Current month
         entities:

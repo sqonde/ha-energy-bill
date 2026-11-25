@@ -39,8 +39,9 @@ inspired by [Energy Costs](https://github.com/matzem79/home-assistant-energy-cos
 
 ## Dashboard
 
-`docs/dashboard.yaml` is an example Lovelace view with the core energy cards and
-the Energy Bill sensors. To use it, open a dashboard, choose Edit dashboard,
+`docs/dashboard.yaml` is an example Lovelace view with the Energy Bill sensors only.
+Consumption, solar and cost per period stay in the Home Assistant Energy
+dashboard. To use the example, open a dashboard, choose Edit dashboard,
 open the raw configuration editor from the three-dot menu and paste the file's
 content. It replaces the dashboard; to keep other views, paste the view under
 `views:` as a list item instead.

@@ -125,3 +125,4 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 - Task 1 includes minimal `config_flow.py` and `sensor.py` placeholders: Home Assistant loads the declared config flow and forwarded sensor platform during setup. Task 3 implements their user-facing behavior.
 - CI uses an exact `pytest-homeassistant` pin. Weekly Dependabot pull requests provide early warning of new releases, with CI and review before updating the pin; no test job floats.
 - `hacs.json` includes the integration name as well as the minimum Home Assistant version for HACS validation.
+- Prepayment due days are limited to 1–28 so every selected day exists in every month.

@@ -1,1 +1,116 @@
-{}
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "import_stat": "Grid import",
+          "export_stat": "Grid export",
+          "solar_stat": "Solar production"
+        }
+      }
+    },
+    "error": {
+      "no_statistics": "A selected statistic has no metadata."
+    }
+  },
+  "config_subentries": {
+    "tariff": {
+      "entry_type": "Tariff",
+      "initiate_flow": {
+        "user": "Add tariff",
+        "reconfigure": "Edit tariff"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "valid_from": "Valid from",
+            "buy": "Import price per kWh",
+            "sell": "Export price per kWh",
+            "base_year": "Annual base fee"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "valid_from": "Valid from",
+            "buy": "Import price per kWh",
+            "sell": "Export price per kWh",
+            "base_year": "Annual base fee"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "This date already exists."
+      }
+    },
+    "prepayment": {
+      "entry_type": "Prepayment",
+      "initiate_flow": {
+        "user": "Add prepayment",
+        "reconfigure": "Edit prepayment"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "valid_from": "Valid from",
+            "amount": "Prepayment",
+            "due_day": "Due day (1–28)",
+            "skip_months": "Skipped months"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "valid_from": "Valid from",
+            "amount": "Prepayment",
+            "due_day": "Due day (1–28)",
+            "skip_months": "Skipped months"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "This date already exists."
+      }
+    },
+    "billing_period": {
+      "entry_type": "Billing period",
+      "initiate_flow": {
+        "user": "Add billing period",
+        "reconfigure": "Edit billing period"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "start": "Start",
+            "start_reading_kwh": "Starting meter reading (kWh)",
+            "opening_balance": "Opening balance"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "start": "Start",
+            "start_reading_kwh": "Starting meter reading (kWh)",
+            "opening_balance": "Opening balance"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "This date already exists."
+      }
+    }
+  },
+  "issues": {
+    "no_tariff": {
+      "title": "No valid tariff",
+      "description": "Add a tariff valid today."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "price_buy": {
+        "name": "Energy Bill price buy"
+      },
+      "price_sell": {
+        "name": "Energy Bill price sell"
+      }
+    }
+  }
+}

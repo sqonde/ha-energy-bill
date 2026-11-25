@@ -1,1 +1,116 @@
-{}
+{
+  "config": {
+    "step": {
+      "user": {
+        "data": {
+          "import_stat": "Netzbezug",
+          "export_stat": "Netzeinspeisung",
+          "solar_stat": "Solarertrag"
+        }
+      }
+    },
+    "error": {
+      "no_statistics": "Für mindestens eine Statistik fehlen Metadaten."
+    }
+  },
+  "config_subentries": {
+    "tariff": {
+      "entry_type": "Tarif",
+      "initiate_flow": {
+        "user": "Tarif hinzufügen",
+        "reconfigure": "Tarif bearbeiten"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "valid_from": "Gültig ab",
+            "buy": "Bezugspreis je kWh",
+            "sell": "Einspeisevergütung je kWh",
+            "base_year": "Grundpreis pro Jahr"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "valid_from": "Gültig ab",
+            "buy": "Bezugspreis je kWh",
+            "sell": "Einspeisevergütung je kWh",
+            "base_year": "Grundpreis pro Jahr"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "Dieses Datum ist bereits vorhanden."
+      }
+    },
+    "prepayment": {
+      "entry_type": "Abschlag",
+      "initiate_flow": {
+        "user": "Abschlag hinzufügen",
+        "reconfigure": "Abschlag bearbeiten"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "valid_from": "Gültig ab",
+            "amount": "Abschlag",
+            "due_day": "Fälligkeitstag (1–28)",
+            "skip_months": "Ausgesetzte Monate"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "valid_from": "Gültig ab",
+            "amount": "Abschlag",
+            "due_day": "Fälligkeitstag (1–28)",
+            "skip_months": "Ausgesetzte Monate"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "Dieses Datum ist bereits vorhanden."
+      }
+    },
+    "billing_period": {
+      "entry_type": "Abrechnungszeitraum",
+      "initiate_flow": {
+        "user": "Abrechnungszeitraum hinzufügen",
+        "reconfigure": "Abrechnungszeitraum bearbeiten"
+      },
+      "step": {
+        "user": {
+          "data": {
+            "start": "Beginn",
+            "start_reading_kwh": "Zählerstand bei Beginn (kWh)",
+            "opening_balance": "Anfangssaldo"
+          }
+        },
+        "reconfigure": {
+          "data": {
+            "start": "Beginn",
+            "start_reading_kwh": "Zählerstand bei Beginn (kWh)",
+            "opening_balance": "Anfangssaldo"
+          }
+        }
+      },
+      "error": {
+        "duplicate_date": "Dieses Datum ist bereits vorhanden."
+      }
+    }
+  },
+  "issues": {
+    "no_tariff": {
+      "title": "Kein gültiger Tarif",
+      "description": "Füge einen Tarif hinzu, der heute gültig ist."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "price_buy": {
+        "name": "Energy Bill Bezugspreis"
+      },
+      "price_sell": {
+        "name": "Energy Bill Einspeisevergütung"
+      }
+    }
+  }
+}

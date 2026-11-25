@@ -4,7 +4,7 @@ from calendar import monthrange
 from dataclasses import dataclass
 from datetime import date, timedelta
 
-from .profile import H0
+from .profile import H25
 from .tariffs import feed_in_day, prepayments_between, supplier_day_cost, tariff_on
 
 
@@ -108,7 +108,7 @@ def project_period(
     }
 
     def share(day):
-        return H0[day.month - 1] / monthrange(day.year, day.month)[1]
+        return H25[day.month - 1] / monthrange(day.year, day.month)[1]
 
     window_share = sum(share(today - timedelta(days=i)) for i in range(1, 61))
     use_solar = pv_month_kwh is not None and all(

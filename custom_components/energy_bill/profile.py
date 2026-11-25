@@ -1,19 +1,19 @@
 """Monthly shares of annual household electricity consumption."""
 
-# BDEW Standardlastprofile Strom, Repräsentative VDEW-Profile 1999,
-# sheet Dynamischer Jahresverlauf, June 1996 through May 1997.
-# Reproduce with scripts/h0_month_shares.py and the original workbook.
-H0 = (
-    0.101686,
-    0.089303,
-    0.093341,
-    0.083065,
-    0.078302,
-    0.070246,
-    0.069486,
-    0.071353,
-    0.073252,
-    0.083311,
-    0.086898,
-    0.099758,
+# BDEW "Standardlastprofile Strom", H25 table 2025, dynamised over 2026–2035.
+# Weekends use SA/FT; public holidays are ignored because they vary by state.
+# Reproduce with scripts/h25_month_shares.py and the original workbook.
+H25 = (
+    0.100996,
+    0.088761,
+    0.088096,
+    0.081474,
+    0.077009,
+    0.071414,
+    0.074360,
+    0.073475,
+    0.073205,
+    0.083567,
+    0.088217,
+    0.099424,
 )

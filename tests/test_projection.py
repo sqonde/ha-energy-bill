@@ -97,10 +97,10 @@ def test_period_models_days_and_counts_skipped_prepayment():
         today,
         None,
     )
-    assert result.import_kwh == pytest.approx(357.2961244466)
-    assert result.supplier_cost == pytest.approx(107.1888373340)
+    assert result.import_kwh == pytest.approx(352.8003026478)
+    assert result.supplier_cost == pytest.approx(105.8400907943)
     assert result.prepay == 0
-    assert result.balance == pytest.approx(-107.1888373340)
+    assert result.balance == pytest.approx(-105.8400907943)
     assert "modelled_days" in result.incomplete_reasons
 
 
@@ -141,7 +141,7 @@ def test_period_uses_solar_to_model_self_use():
         None,
     )
     # Recent consumption is 10 kWh/day; 4 of 6 kWh solar is self-used.
-    assert result.import_kwh == pytest.approx(150.6294577799)
+    assert result.import_kwh == pytest.approx(146.1336359811)
     assert result.feed_in == pytest.approx(8.2666666667)
 
 
@@ -216,7 +216,7 @@ def test_solar_factor_uses_totals_across_window():
         None,
     )
     # 30 kWh self-used / min(300 kWh yield, 330 kWh consumption) = 0.1.
-    assert result.import_kwh == pytest.approx(5.7052123097)
+    assert result.import_kwh == pytest.approx(5.6334241874)
 
 
 def test_period_missing_tariff_does_not_report_partial_bill():
@@ -263,11 +263,11 @@ def test_year_projection_with_tariff_change_and_meter_gap():
         first_statistic_state=1690,
     )
     # The 60-day window spans 5 September, 31 October and 24 November days.
-    # The gap and measured days total 2690 kWh; seasonal future days add about 1120.2 kWh.
-    assert result.import_kwh == pytest.approx(3810.2019251316)
-    assert result.supplier_cost == pytest.approx(1212.4951039578)
+    # The gap and measured days total 2690 kWh; seasonal future days add about 1106.7 kWh.
+    assert result.import_kwh == pytest.approx(3796.7275080592)
+    assert result.supplier_cost == pytest.approx(1207.4643381094)
     assert result.prepay == 1100
-    assert result.balance == pytest.approx(-62.4951039578)
+    assert result.balance == pytest.approx(-57.4643381094)
     assert result.measured_days == 100
 
 
@@ -287,12 +287,12 @@ def test_period_projects_april_using_bdew_shares():
         None,
     )
     # Window: one January day, 28 February days and 31 March days.
-    expected = 600 * 0.083065 / (0.101686 / 31 + 0.089303 + 0.093341)
+    expected = 600 * 0.081474 / (0.100996 / 31 + 0.088761 + 0.088096)
     assert result.import_kwh == pytest.approx(expected, rel=1e-9)
 
 
-def test_h0_shares_cover_a_year():
-    from custom_components.energy_bill.profile import H0
+def test_h25_shares_cover_a_year():
+    from custom_components.energy_bill.profile import H25
 
-    assert len(H0) == 12
-    assert sum(H0) == pytest.approx(1, abs=0.000006)
+    assert len(H25) == 12
+    assert sum(H25) == pytest.approx(1, abs=0.000006)

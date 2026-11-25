@@ -1,4 +1,4 @@
-"""Tests for the release archive."""
+"""Test the release archive produced by the workflow."""
 
 import json
 import os
@@ -7,65 +7,60 @@ import subprocess
 import zipfile
 from pathlib import Path
 
+import pytest
+import yaml
 
-def test_release_archive_contains_only_integration(tmp_path):
+
+def test_release_archive_has_stamped_manifest_in_integration_directory(tmp_path):
     root = Path(__file__).resolve().parents[1]
-    repo = tmp_path / "repo"
-    repo.mkdir()
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    step = next(s for s in workflow["jobs"]["release"]["steps"] if s.get("name") == "Build archive")
+    shutil.copytree(root / "custom_components", tmp_path / "custom_components")
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
+    (tmp_path / "custom_components/energy_bill/secret.private").write_text("private")
     subprocess.run(
-        ["git", "init", "-b", "main", str(repo)], check=True, capture_output=True
-    )
-    subprocess.run(
-        ["git", "init", "--bare", str(tmp_path / "origin.git")],
-        check=True,
-        capture_output=True,
-    )
-    for key, value in (("user.name", "test"), ("user.email", "test@example.invalid")):
-        subprocess.run(["git", "config", key, value], cwd=repo, check=True)
-    subprocess.run(
-        ["git", "remote", "add", "origin", str(tmp_path / "origin.git")],
-        cwd=repo,
+        ["bash", "-e", "-c", step["run"]],
+        cwd=tmp_path,
+        env=os.environ | {"RELEASE_TAG": "v0.2.0"},
         check=True,
     )
-    shutil.copytree(
-        root / "custom_components",
-        repo / "custom_components",
-        ignore=shutil.ignore_patterns("__pycache__"),
-    )
-    shutil.copytree(root / "scripts", repo / "scripts")
-    (repo / ".gitignore").write_text("*.private\n")
+    with zipfile.ZipFile(tmp_path / "energy_bill.zip") as archive:
+        assert "energy_bill/manifest.json" in archive.namelist()
+        assert "energy_bill/secret.private" not in archive.namelist()
+        assert json.loads(archive.read("energy_bill/manifest.json"))["version"] == "0.2.0"
+
+
+@pytest.mark.parametrize("failed_push", [False, True])
+def test_tag_job_ignores_old_tags_and_does_not_repeat_a_created_tag(tmp_path, failed_push):
+    root = Path(__file__).resolve().parents[1]
+    workflow = yaml.safe_load((root / ".github/workflows/ci.yml").read_text())
+    step = next(s for s in workflow["jobs"]["tag"]["steps"] if s.get("id") == "bump")
+    repo = tmp_path / "source"
+    subprocess.run(["git", "init", "-b", "main", str(repo)], check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+    (repo / "file").write_text("test")
     subprocess.run(["git", "add", "."], cwd=repo, check=True)
-    subprocess.run(
-        ["git", "commit", "-m", "test: initial"],
-        cwd=repo,
-        check=True,
-        capture_output=True,
+    subprocess.run(["git", "commit", "-m", "test: initial"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "tag", "v0.1.0"], cwd=repo, check=True)
+    sha = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    git = bindir / "git"
+    git.write_text(f'#!/bin/sh\nif [ "$1" = clone ]; then shift 2; exec /usr/bin/git clone "{repo}" "$@"; fi\nexec /usr/bin/git "$@"\n')
+    git.chmod(0o755)
+    bump = tmp_path / "bump"
+    bump.write_text(
+        '#!/bin/sh\n'
+        + (f'echo called >> "{tmp_path}/calls"\ngit tag v0.2.0\ngit push origin refs/tags/v0.2.0\nexit 1\n' if failed_push else 'exit 0\n')
     )
-    tools = tmp_path / "bin"
-    tools.mkdir()
-    gh = tools / "gh"
-    gh.write_text('#!/bin/sh\ncp "$4" "$RELEASE_ARCHIVE"\n')
-    gh.chmod(0o755)
-    archive = tmp_path / "release.zip"
-    env = os.environ | {
-        "PATH": f"{tools}:{os.environ['PATH']}",
-        "RELEASE_ARCHIVE": str(archive),
-    }
-    (repo / "custom_components/energy_bill/secret.private").write_text("private")
+    bump.chmod(0o755)
+    output = tmp_path / "output"
     subprocess.run(
-        ["scripts/release.sh", "0.2.0"],
-        cwd=repo,
-        env=env,
-        check=True,
-        capture_output=True,
+        ["bash", "-e", "-c", step["run"]], cwd=tmp_path, check=True,
+        env=os.environ | {"PATH": f"{bindir}:{os.environ['PATH']}", "GH_TOKEN": "fake", "GITHUB_REPOSITORY": "test/repo", "GITHUB_SHA": sha, "GITHUB_OUTPUT": str(output), "BUMP_DIR": str(tmp_path)},
     )
-    with zipfile.ZipFile(archive) as result:
-        assert "energy_bill/manifest.json" in result.namelist()
-        assert "energy_bill/secret.private" not in result.namelist()
-        assert all(
-            name.startswith("energy_bill/") and "__pycache__" not in name
-            for name in result.namelist()
-        )
-        assert (
-            json.loads(result.read("energy_bill/manifest.json"))["version"] == "0.2.0"
-        )
+    assert output.read_text() == ("tag=v0.2.0\n" if failed_push else "tag=\n")
+    if failed_push:
+        assert (tmp_path / "calls").read_text() == "called\n"

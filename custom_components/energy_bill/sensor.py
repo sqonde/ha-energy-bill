@@ -35,6 +35,12 @@ async def async_setup_entry(hass, entry, async_add_entities):
             )
         ]
     )
+    async_add_entities(
+        [
+            PeriodSensor(coordinator, entry, kind)
+            for kind in ("import_kwh", "supplier_cost", "feed_in", "prepay", "balance")
+        ]
+    )
 
 
 class PriceSensor(SensorEntity):
@@ -115,5 +121,32 @@ class MonthSensor(CoordinatorEntity, SensorEntity):
         return (
             {"measured_days": self.coordinator.data.measured_days}
             if self.coordinator.data
+            else {}
+        )
+
+
+class PeriodSensor(MonthSensor):
+    """Projected billing period total."""
+
+    def __init__(self, coordinator, entry, kind):
+        super().__init__(coordinator, entry, kind)
+        key = "import" if kind == "import_kwh" else kind
+        self._attr_unique_id = f"{entry.entry_id}_period_{key}"
+        self._attr_translation_key = f"period_{key}"
+
+    @property
+    def native_value(self):
+        result = self.coordinator.period
+        return getattr(result, self.kind) if result else None
+
+    @property
+    def extra_state_attributes(self):
+        result = self.coordinator.period
+        return (
+            {
+                "measured_days": result.measured_days,
+                "incomplete_reasons": result.incomplete_reasons,
+            }
+            if result
             else {}
         )

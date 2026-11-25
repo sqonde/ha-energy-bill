@@ -125,7 +125,36 @@
       },
       "month_prepay": {
         "name": "Energy Bill Monat Abschlag"
+      },
+      "period_import": {
+        "name": "Energy Bill Abrechnungszeitraum Import"
+      },
+      "period_supplier_cost": {
+        "name": "Energy Bill Abrechnungszeitraum Lieferantenkosten"
+      },
+      "period_feed_in": {
+        "name": "Energy Bill Abrechnungszeitraum Einspeisevergütung"
+      },
+      "period_prepay": {
+        "name": "Energy Bill Abrechnungszeitraum Abschlag"
+      },
+      "period_balance": {
+        "name": "Energy Bill Abrechnungszeitraum Saldo"
       }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "latitude": "Breitengrad",
+          "longitude": "Längengrad",
+          "planes": "PV-Flächen"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "PVGIS konnte nicht abgefragt werden."
     }
   }
 }

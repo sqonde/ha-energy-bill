@@ -3,17 +3,22 @@
 from functools import partial
 
 import voluptuous as vol
+from aiohttp import ClientError
 from homeassistant import config_entries
 from homeassistant.components.energy import async_get_manager
 from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.statistics import get_metadata
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     DateSelector,
+    NumberSelector,
+    ObjectSelector,
     SelectSelector,
     StatisticSelector,
 )
 
 from .const import DOMAIN
+from .pvgis import async_fetch_pvgis
 
 
 class EnergyBillConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -21,6 +26,10 @@ class EnergyBillConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
     MINOR_VERSION = 1
+
+    @staticmethod
+    def async_get_options_flow(config_entry):
+        return EnergyBillOptionsFlow()
 
     @classmethod
     def async_get_supported_subentry_types(cls, config_entry):
@@ -148,3 +157,77 @@ class PeriodFlow(DatedFlow):
             vol.Optional("opening_balance"): vol.Coerce(float),
         }
     )
+
+
+class EnergyBillOptionsFlow(config_entries.OptionsFlow):
+    """Configure solar planes and retrieve their monthly yield."""
+
+    async def async_step_init(self, user_input=None):
+        errors = {}
+        if user_input is not None:
+            planes = user_input["planes"]
+            try:
+                months = (
+                    await async_fetch_pvgis(
+                        async_get_clientsession(self.hass),
+                        user_input["latitude"],
+                        user_input["longitude"],
+                        planes,
+                    )
+                    if planes
+                    else None
+                )
+            except (
+                ClientError,
+                TimeoutError,
+                ValueError,
+                KeyError,
+                TypeError,
+                IndexError,
+            ):
+                errors["base"] = "cannot_connect"
+            else:
+                return self.async_create_entry(
+                    title="", data={"planes": planes, "pv_month_kwh": months}
+                )
+        schema = vol.Schema(
+            {
+                vol.Required("latitude", default=self.hass.config.latitude): vol.All(
+                    vol.Coerce(float), vol.Range(min=-90, max=90)
+                ),
+                vol.Required("longitude", default=self.hass.config.longitude): vol.All(
+                    vol.Coerce(float), vol.Range(min=-180, max=180)
+                ),
+                vol.Required(
+                    "planes", default=self.config_entry.options.get("planes", [])
+                ): ObjectSelector(
+                    {
+                        "multiple": True,
+                        "fields": {
+                            "kwp": {
+                                "label": "kWp",
+                                "required": True,
+                                "selector": NumberSelector(
+                                    {"min": 0.001, "max": 1000000, "mode": "box"}
+                                ),
+                            },
+                            "tilt": {
+                                "label": "Tilt",
+                                "required": True,
+                                "selector": NumberSelector(
+                                    {"min": 0, "max": 90, "mode": "box"}
+                                ),
+                            },
+                            "azimuth": {
+                                "label": "Azimuth",
+                                "required": True,
+                                "selector": NumberSelector(
+                                    {"min": -180, "max": 180, "mode": "box"}
+                                ),
+                            },
+                        },
+                    }
+                ),
+            }
+        )
+        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)

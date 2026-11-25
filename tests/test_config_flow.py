@@ -313,3 +313,50 @@ async def test_user_flow_accepts_recorded_statistic(recorder_mock, hass):
         )
     assert result["type"] == "create_entry"
     assert result["data"] == {"import_stat": "sensor.grid"}
+
+
+async def test_options_fetch_pvgis_and_report_connection_errors(recorder_mock, hass):
+    from aiohttp import ClientError
+    from pytest_homeassistant.common import MockConfigEntry
+
+    entry = MockConfigEntry(domain="energy_bill", data={"import_stat": "sensor.grid"})
+    entry.add_to_hass(hass)
+    form = await hass.config_entries.options.async_init(entry.entry_id)
+    data = {
+        "latitude": 0.0,
+        "longitude": 0.0,
+        "planes": [{"kwp": 1, "tilt": 30, "azimuth": 0}],
+    }
+    with patch(
+        "custom_components.energy_bill.config_flow.async_fetch_pvgis",
+        new=AsyncMock(side_effect=ClientError),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            form["flow_id"], data
+        )
+    assert result["errors"]["base"] == "cannot_connect"
+    with patch(
+        "custom_components.energy_bill.config_flow.async_fetch_pvgis",
+        new=AsyncMock(return_value=[100.0] * 12),
+    ):
+        result = await hass.config_entries.options.async_configure(
+            form["flow_id"], data
+        )
+    assert result["type"] == "create_entry"
+    assert entry.options["pv_month_kwh"] == [100.0] * 12
+    assert entry.options["planes"] == data["planes"]
+    assert "latitude" not in entry.options
+
+
+async def test_options_form_can_be_rendered(recorder_mock, hass):
+    import probatio
+    from homeassistant.helpers import config_validation as cv
+    from pytest_homeassistant.common import MockConfigEntry
+
+    entry = MockConfigEntry(domain="energy_bill")
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    fields = probatio.to_field_list(
+        result["data_schema"], custom_serializer=cv.custom_serializer
+    )
+    assert any(field["name"] == "planes" for field in fields)

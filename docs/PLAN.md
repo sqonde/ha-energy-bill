@@ -11,7 +11,7 @@
 **Requirements:**
 - tariffs change at a date; a new tariff must be enterable in the UI without code changes, the old ones stay as history
 - estimates of what is paid to the supplier, month and billing period, against the monthly prepayment (Abschlag)
-- used for years and maintained as a public project; Home Assistant changes monthly, so CI tests against the latest release
+- used for years and maintained as a public project; Home Assistant changes monthly, so CI checks proposed dependency updates
 - amounts of money are shown only where the user puts them (dashboard), the integration only provides sensors
 - prior art: "Energy Costs" (github.com/matzem79/home-assistant-energy-costs), see Decisions
 
@@ -30,7 +30,7 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 - A tariff is valid from 00:00 local time of its `valid_from` until the next tariff's `valid_from`
 - Energy dashboard preferences (`energy.async_get_manager`) are undocumented: read them only to pre-fill the config flow
 - Strings in `strings.json`, `translations/en.json`, `translations/de.json`
-- CI runs the tests against the pinned `pytest-homeassistant` and the latest release (the target installation auto-updates)
+- CI runs tests against pinned `pytest-homeassistant`; weekly Dependabot pull requests check new releases and action updates
 
 ## Review Focus
 
@@ -45,7 +45,7 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 ### Task 1: Repository skeleton, CI and release
 
 **Files:**
-- Create: `custom_components/energy_bill/{__init__.py,manifest.json,const.py,strings.json,translations/en.json,translations/de.json,brand/icon.png}`, `hacs.json`, `README.md`, `LICENSE` (MIT, sqonde), `pyproject.toml` (ruff; pytest `asyncio_mode = "auto"`, `addopts = "-p no:respx"`), `requirements_test.txt` (`pytest-homeassistant==2026.11.3`), `.github/workflows/test.yml` (ruff; pytest on pinned and latest), `.github/workflows/validate.yml` (hassfest, `hacs/action` `category: integration`), `scripts/release.sh <version>` (bump manifest, tag, push, `gh release create --verify-tag` with `energy_bill.zip` of `custom_components/energy_bill` attached)
+- Create: `custom_components/energy_bill/{__init__.py,manifest.json,const.py,strings.json,translations/en.json,translations/de.json,brand/icon.png}`, `hacs.json`, `README.md`, `LICENSE` (MIT, sqonde), `pyproject.toml` (ruff; pytest `asyncio_mode = "auto"`, `addopts = "-p no:respx"`), `requirements_test.txt` (`pytest-homeassistant==2026.11.3`), `.github/workflows/test.yml` (ruff; pytest on pinned), `.github/dependabot.yml` (weekly dependency and action updates), `.github/workflows/validate.yml` (hassfest, `hacs/action` `category: integration`), `scripts/release.sh <version>` (bump manifest, tag, push, `gh release create --verify-tag` with `energy_bill.zip` of `custom_components/energy_bill` attached)
 - Test: `tests/test_init.py`
 
 - [ ] **Step 1:** `test_setup_and_unload` (entry `LOADED`, then `NOT_LOADED`); `test_migrate_entry_v1_noop` (`async_migrate_entry` returns True for 1.1).
@@ -122,3 +122,6 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 - Name `energy_bill` / "Energy Bill"; the release zip must install by unpacking it into `custom_components/` (some users install without the Marketplace)
 - Feed-in shown separately, not netted against the supplier bill
 - Consumption seasonality from the BDEW H0 profile until a year of data exists
+- Task 1 includes minimal `config_flow.py` and `sensor.py` placeholders: Home Assistant loads the declared config flow and forwarded sensor platform during setup. Task 3 implements their user-facing behavior.
+- CI uses an exact `pytest-homeassistant` pin. Weekly Dependabot pull requests provide early warning of new releases, with CI and review before updating the pin; no test job floats.
+- `hacs.json` includes the integration name as well as the minimum Home Assistant version for HACS validation.

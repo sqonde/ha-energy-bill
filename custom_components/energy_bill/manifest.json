@@ -1,0 +1,19 @@
+{
+  "domain": "energy_bill",
+  "name": "Energy Bill",
+  "after_dependencies": [
+    "energy"
+  ],
+  "codeowners": [
+    "@sqonde"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "recorder"
+  ],
+  "documentation": "https://github.com/sqonde/ha-energy-bill",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/sqonde/ha-energy-bill/issues",
+  "version": "0.1.0"
+}

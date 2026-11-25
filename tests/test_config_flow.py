@@ -3,6 +3,7 @@
 from unittest.mock import AsyncMock, patch
 
 from homeassistant import config_entries
+from pytest_homeassistant.components.recorder.common import async_wait_recording_done
 
 
 async def test_user_flow_requires_statistics(recorder_mock, hass):
@@ -300,7 +301,7 @@ async def test_user_flow_accepts_recorded_statistic(recorder_mock, hass):
         },
         [{"start": datetime(2030, 1, 1, tzinfo=UTC), "state": 1, "sum": 1}],
     )
-    await recorder_mock.async_block_till_done()
+    await async_wait_recording_done(hass)
     with patch(
         "custom_components.energy_bill.config_flow.async_get_manager",
         new=AsyncMock(return_value=None),

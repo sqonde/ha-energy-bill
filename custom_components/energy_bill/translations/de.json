@@ -110,6 +110,21 @@
       },
       "price_sell": {
         "name": "Energy Bill Einspeisevergütung"
+      },
+      "month_import": {
+        "name": "Energy Bill Monat Netzbezug"
+      },
+      "month_supplier_cost": {
+        "name": "Energy Bill Monat Lieferantenkosten"
+      },
+      "month_supplier_cost_to_date": {
+        "name": "Energy Bill Monat bisherige Lieferantenkosten"
+      },
+      "month_feed_in": {
+        "name": "Energy Bill Monat Einspeisevergütung"
+      },
+      "month_prepay": {
+        "name": "Energy Bill Monat Abschlag"
       }
     }
   }

@@ -127,3 +127,4 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 - `hacs.json` includes the integration name as well as the minimum Home Assistant version for HACS validation.
 - Prepayment due days are limited to 1–28 so every selected day exists in every month.
 - Releases use bump on pushes to main. The planned 0.1.0, 0.2.0 and 0.3.0 releases mean the releases containing Tasks 3, 4 and 5 respectively; versions follow commits (feat increments the minor version while 0.x). The release archive stamps the manifest version from the tag and unpacks into `custom_components/`.
+- Month projections accept prepayments as an optional argument, since the planned result includes prepayments but its interface omitted them. A missing tariff makes the projection unknown rather than reporting an incomplete bill.

@@ -36,3 +36,15 @@ be attributed to the wrong tariff. Check `measured_days` and
 The opening balance, separate export settlement, and completeness reasons are
 inspired by [Energy Costs](https://github.com/matzem79/home-assistant-energy-costs)
 (MIT license).
+
+## Dashboard
+
+`docs/dashboard.yaml` is an example Lovelace view with the core energy cards and
+the Energy Bill sensors. To use it, open a dashboard, choose Edit dashboard,
+open the raw configuration editor from the three-dot menu and paste the file's
+content. It replaces the dashboard; to keep other views, paste the view under
+`views:` as a list item instead.
+
+In the Energy dashboard settings, set the grid import price to
+`sensor.energy_bill_price_buy` and the export price to
+`sensor.energy_bill_price_sell`.

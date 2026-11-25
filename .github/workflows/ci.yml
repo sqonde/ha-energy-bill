@@ -3,10 +3,16 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing release tag to complete
+        required: true
+        type: string
 permissions:
   contents: read
 jobs:
   test:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       PIP_DISABLE_PIP_VERSION_CHECK: '1'
@@ -19,11 +25,13 @@ jobs:
       - run: ruff check .
       - run: pytest
   hassfest:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: home-assistant/actions/hassfest@07f46fd2e19967768b5fd3000f91f857452b767c # 2026.11.0
   hacs:
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -68,6 +76,11 @@ jobs:
           git config user.name sqonde
           git config user.email 23698389+sqonde@users.noreply.github.com
           git tag --points-at HEAD --list 'v*' > "$temp/old-tags"
+          existing=$(head -n 1 "$temp/old-tags")
+          if [ -n "$existing" ]; then
+            echo "tag=$existing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           for attempt in 1 2 3; do
             if BUMP_V0=true "$BUMP_DIR/bump" release --push; then
               break
@@ -93,24 +106,38 @@ jobs:
           if [ -n "${BUMP_DIR:-}" ]; then rm -rf "$BUMP_DIR"; fi
   release:
     needs: tag
-    if: needs.tag.outputs.tag != ''
+    if: always() && ((github.event_name == 'push' && needs.tag.result == 'success' && needs.tag.outputs.tag != '') || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    concurrency:
+      group: energy-bill-release
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.tag.outputs.tag }}
-      - name: Build archive
+          persist-credentials: false
+      - name: Validate tag
         env:
-          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
+          RELEASE_TAG: ${{ inputs.tag || needs.tag.outputs.tag }}
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag || needs.tag.outputs.tag }}
+          path: release-source
+          persist-credentials: false
+      - name: Build archive
+        working-directory: release-source
+        env:
+          RELEASE_TAG: ${{ inputs.tag || needs.tag.outputs.tag }}
         run: |
           python3 - <<'PY'
           import json
           import os
           import subprocess
           from pathlib import Path
-          from zipfile import ZIP_DEFLATED, ZipFile
+          from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
 
           root = Path('custom_components/energy_bill')
           manifest = root / 'manifest.json'
@@ -122,9 +149,12 @@ jobs:
               for name in files.split(b'\0'):
                   if name:
                       path = Path(os.fsdecode(name))
-                      archive.write(path, path.relative_to(root.parent))
+                      info = ZipInfo(str(path.relative_to(root.parent)), (1980, 1, 1, 0, 0, 0))
+                      info.compress_type = ZIP_DEFLATED
+                      info.external_attr = 0o100644 << 16
+                      archive.writestr(info, path.read_bytes())
           PY
       - env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
-        run: gh release create "$RELEASE_TAG" energy_bill.zip --verify-tag --title "$RELEASE_TAG" --generate-notes
+          RELEASE_TAG: ${{ inputs.tag || needs.tag.outputs.tag }}
+        run: python3 scripts/publish_release.py "$RELEASE_TAG" release-source/energy_bill.zip

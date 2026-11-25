@@ -118,6 +118,7 @@ Facts the plan relies on (checked in HA core 2026.11.3 by the review): the energ
 
 ## Decisions
 
+- A failed upload may leave an incomplete release asset. The pipeline stops without replacing it; a person must resolve it before retrying. The protected v0.3.2 asset must never be deleted or replaced.
 - H25 replaces H0 as the seasonality source (owner decision, 2026-11-25).
 - Build instead of forking "Energy Costs" (matzem79, MIT, 0.2.3): reviewed 2026-11-25. Its domain model is sound (import and export settled separately with own billing starts, opening balance for a period begun before tracking, `incomplete_reasons` instead of silent zeros, DST-aware day split, backfill from statistics), but it keeps its own ledger fed by polling the meters every minute, bundles prices and prepayments in one tariff row in one options form, has no HA integration tests (unittest with mocks, CI on Python 3.13) and no price sensor or forecast; a fork would replace most of it. Take over, with attribution in the README: the opening balance (Task 5 `billing_period.opening_balance`), the export settlement as its own balance, and the completeness reasons as a sensor attribute
 - Name `energy_bill` / "Energy Bill"; the release zip must install by unpacking it into `custom_components/` (some users install without the Marketplace)

@@ -1,19 +1,19 @@
 """Monthly shares of annual household electricity consumption."""
 
-# https://github.com/kralo/stromdaten-deutschland-standardlastprofile/blob/master/data-exported/h0_dyn_1999_stdlast_Monat.csv
-# 1999 dynamised H0 monthly shares of annual energy from this CSV; checked 2026-11-25.
-# shortcut: 1999 shares vary by year, replace with shares from the BDEW tables.
+# BDEW Standardlastprofile Strom, Repräsentative VDEW-Profile 1999,
+# sheet Dynamischer Jahresverlauf, June 1996 through May 1997.
+# Reproduce with scripts/h0_month_shares.py and the original workbook.
 H0 = (
-    0.10169,
-    0.08930,
-    0.09334,
-    0.08306,
-    0.07830,
-    0.07025,
-    0.06949,
-    0.07135,
-    0.07325,
-    0.08331,
-    0.08690,
-    0.09976,
+    0.101686,
+    0.089303,
+    0.093341,
+    0.083065,
+    0.078302,
+    0.070246,
+    0.069486,
+    0.071353,
+    0.073252,
+    0.083311,
+    0.086898,
+    0.099758,
 )

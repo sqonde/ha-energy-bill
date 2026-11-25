@@ -25,8 +25,9 @@ The month projection uses recorded daily statistics up to yesterday and a
 28-calendar-day average for the remaining days. During the first 28 days, the
 average includes days without data and may be low. The billing-period projection
 uses recorded days and models the rest from recent consumption, seasonal H0
-shares and, when configured, PV yield and measured self-use. With a full year
-of daily statistics it uses the corresponding previous-year day where available.
+shares derived from the BDEW 1999 dynamised profile and, when configured, PV
+yield and measured self-use. With a full year of daily statistics it uses the
+corresponding previous-year day where available.
 Missing buckets between readings count as zero change because the next bucket
 may contain the missed energy. A price change inside such a gap can therefore
 be attributed to the wrong tariff. Check `measured_days` and

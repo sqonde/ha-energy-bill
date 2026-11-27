@@ -4,11 +4,16 @@ import logging
 from datetime import datetime, time, timedelta
 
 from homeassistant.components.recorder import get_instance
-from homeassistant.components.recorder.statistics import statistics_during_period
+from homeassistant.components.recorder.models.statistics import StatisticMeanType
+from homeassistant.components.recorder.statistics import (
+    async_add_external_statistics,
+    statistics_during_period,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from . import periods_from_entry, prepayments_from_entry, tariffs_from_entry
+from .history import monthly_rows
 from .projection import DayEnergy, project_month, project_period
 
 
@@ -29,7 +34,10 @@ class EnergyBillCoordinator(DataUpdateCoordinator):
         today = dt_util.now().date()
         periods = sorted(periods_from_entry(self.entry), key=lambda item: item["start"])
         current = next((p for p in reversed(periods) if p["start"] <= today), None)
-        start = min(today.replace(day=1), today - timedelta(days=60))
+        start = today.replace(day=1)
+        for _ in range(11):
+            start = (start - timedelta(days=1)).replace(day=1)
+        start -= timedelta(days=28)
         if current:
             start = min(
                 start,
@@ -118,6 +126,35 @@ class EnergyBillCoordinator(DataUpdateCoordinator):
             )
             for day, value in daily["import_stat"].items()
         ]
+        rows = monthly_rows(
+            self.days,
+            tariffs_from_entry(self.entry),
+            prepayments_from_entry(self.entry),
+            today,
+        )
+        if rows:
+            for index, name in ((1, "supplier_cost"), (2, "prepay")):
+                metadata = {
+                    "source": "energy_bill",
+                    "statistic_id": f"energy_bill:{self.entry.entry_id.lower()}_{name}",
+                    "name": f"Energy Bill {name.replace('_', ' ')}",
+                    "unit_of_measurement": self.hass.config.currency,
+                    "unit_class": None,
+                    "has_mean": True,
+                    "mean_type": StatisticMeanType.ARITHMETIC,
+                    "has_sum": False,
+                }
+                stats = []
+                for row in rows:
+                    start_time = dt_util.as_utc(
+                        datetime.combine(row[0], time.min, local_start.tzinfo)
+                    )
+                    if start_time.minute or start_time.second:
+                        start_time = (start_time + timedelta(hours=1)).replace(
+                            minute=0, second=0, microsecond=0
+                        )
+                    stats.append({"start": start_time, "mean": row[index]})
+                async_add_external_statistics(self.hass, metadata, stats)
         self.period = None
         if current:
             try:

@@ -49,3 +49,11 @@ content. It replaces the dashboard; to keep other views, paste the view under
 In the Energy dashboard settings, set the grid import price to
 `sensor.energy_bill_price_buy` and the export price to
 `sensor.energy_bill_price_sell`.
+
+The monthly chart builds its history at the first update from available meter
+statistics. Past months use the projection made for the last day of each month;
+they are estimates, not invoices. Find the two `energy_bill:` statistic IDs in
+Developer Tools > Statistics, and replace both `ENTRY_ID` placeholders in the
+example with the lowercase entry ID shown there. Months before the first full month of meter data and months without a complete
+tariff have no estimate on the first update. If a tariff is
+removed later, an older estimate may remain until the tariff is restored.

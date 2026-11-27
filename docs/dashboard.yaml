@@ -1,7 +1,6 @@
 # Example view with Energy Bill cards only. Paste it in: Edit dashboard > raw configuration editor.
-# The month and period sensors have no state_class, so Home Assistant records no
-# long-term statistics for them. The cost graph therefore uses history-graph
-# (recorder history), not statistics-graph.
+# Replace ENTRY_ID in both statistic IDs with the lowercase integration entry ID.
+# Find the IDs under Developer Tools > Statistics (see README).
 views:
   - title: Energy
     path: energy
@@ -36,11 +35,15 @@ views:
             name: Buy
           - entity: sensor.energy_bill_price_sell
             name: Sell
-      - type: history-graph
+      - type: statistics-graph
         title: Supplier cost and prepayment per month
-        hours_to_show: 720
+        period: month
+        chart_type: bar
+        days_to_show: 365
+        stat_types:
+          - mean
         entities:
-          - entity: sensor.energy_bill_month_supplier_cost
+          - entity: energy_bill:ENTRY_ID_supplier_cost
             name: Supplier cost
-          - entity: sensor.energy_bill_month_prepayment
+          - entity: energy_bill:ENTRY_ID_prepay
             name: Prepayment

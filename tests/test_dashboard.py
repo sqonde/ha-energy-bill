@@ -25,3 +25,17 @@ async def test_dashboard_entities_exist(recorder_mock, hass):
     used = set(re.findall(r"sensor\.energy_bill_\w+", DASHBOARD.read_text()))
     assert used
     assert used <= known
+
+
+def test_dashboard_chart_uses_external_monthly_statistics():
+    dashboard = yaml.safe_load(DASHBOARD.read_text())
+    chart = next(
+        c for c in dashboard["views"][0]["cards"] if c["type"] == "statistics-graph"
+    )
+    assert chart["period"] == "month"
+    assert chart["chart_type"] == "bar"
+    assert chart["stat_types"] == ["mean"]
+    assert {item["entity"] for item in chart["entities"]} == {
+        "energy_bill:ENTRY_ID_supplier_cost",
+        "energy_bill:ENTRY_ID_prepay",
+    }

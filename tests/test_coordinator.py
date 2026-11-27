@@ -337,3 +337,148 @@ async def test_first_meter_statistic_backfills_start_reading(
         first_statistic_state=130,
     )
     assert coordinator.period.import_kwh == pytest.approx(expected.import_kwh)
+
+
+async def test_month_history_is_written_and_updated(recorder_mock, hass, freezer):
+    from homeassistant.components.recorder import get_instance
+    from homeassistant.components.recorder.statistics import statistics_during_period
+    from homeassistant.config_entries import ConfigSubentry
+
+    hass.config.time_zone = "UTC"
+    dt_util.set_default_time_zone(dt_util.UTC)
+    freezer.move_to("2030-04-16 12:00:00+00:00")
+    async_import_statistics(
+        hass,
+        {
+            "has_mean": False,
+            "has_sum": True,
+            "mean_type": 0,
+            "name": "Grid",
+            "source": "recorder",
+            "statistic_id": "sensor.grid",
+            "unit_of_measurement": "kWh",
+            "unit_class": "energy",
+        },
+        [
+            {
+                "start": datetime(2030, 3, 1, tzinfo=UTC) + timedelta(hours=i),
+                "state": i,
+                "sum": i,
+            }
+            for i in range(46 * 24)
+        ],
+    )
+    await async_wait_recording_done(hass)
+    entry = MockConfigEntry(domain="energy_bill", data={"import_stat": "sensor.grid"})
+    entry.add_to_hass(hass)
+    for kind, data in (
+        ("tariff", {"valid_from": "2030-01-01", "buy": 0.3, "sell": 0, "base_year": 0}),
+        ("prepayment", {"valid_from": "2030-01-01", "amount": 100, "due_day": 15}),
+    ):
+        hass.config_entries.async_add_subentry(
+            entry,
+            ConfigSubentry(data=data, subentry_type=kind, title=kind, unique_id=None),
+        )
+    coordinator = EnergyBillCoordinator(hass, entry)
+    await coordinator.async_refresh()
+    await async_wait_recording_done(hass)
+    ids = {
+        f"energy_bill:{entry.entry_id.lower()}_{suffix}"
+        for suffix in ("supplier_cost", "prepay")
+    }
+
+    def read():
+        return statistics_during_period(
+            hass,
+            datetime(2030, 2, 1, tzinfo=UTC),
+            datetime(2030, 5, 1, tzinfo=UTC),
+            ids,
+            "month",
+            None,
+            {"mean"},
+        )
+
+    result = await get_instance(hass).async_add_executor_job(read)
+    cost = result[f"energy_bill:{entry.entry_id.lower()}_supplier_cost"]
+    prepay = result[f"energy_bill:{entry.entry_id.lower()}_prepay"]
+    assert [row["mean"] for row in cost] == pytest.approx([222.9, 216])
+    assert [row["mean"] for row in prepay] == [100, 100]
+    tariff = next(s for s in entry.subentries.values() if s.subentry_type == "tariff")
+    hass.config_entries.async_update_subentry(
+        entry, tariff, data=dict(tariff.data) | {"buy": 0.4}
+    )
+    await coordinator.async_refresh()
+    await async_wait_recording_done(hass)
+    updated = await get_instance(hass).async_add_executor_job(read)
+    assert [
+        row["mean"]
+        for row in updated[f"energy_bill:{entry.entry_id.lower()}_supplier_cost"]
+    ] == pytest.approx([297.2, 288])
+    assert [
+        row["mean"] for row in updated[f"energy_bill:{entry.entry_id.lower()}_prepay"]
+    ] == [100, 100]
+
+
+async def test_history_timestamp_in_fractional_offset_zone(
+    recorder_mock, hass, freezer
+):
+    from homeassistant.components.recorder import get_instance
+    from homeassistant.components.recorder.statistics import statistics_during_period
+    from homeassistant.config_entries import ConfigSubentry
+
+    hass.config.time_zone = "Asia/Kolkata"
+    dt_util.set_default_time_zone(dt_util.get_time_zone("Asia/Kolkata"))
+    freezer.move_to("2030-03-03 12:00:00+00:00")
+    async_import_statistics(
+        hass,
+        {
+            "has_sum": True,
+            "mean_type": 0,
+            "name": "Grid",
+            "source": "recorder",
+            "statistic_id": "sensor.grid",
+            "unit_of_measurement": "kWh",
+            "unit_class": "energy",
+        },
+        [
+            {
+                "start": datetime(2030, 2, 27, 19, tzinfo=UTC) + timedelta(hours=i),
+                "state": i,
+                "sum": i,
+            }
+            for i in range(72)
+        ],
+    )
+    await async_wait_recording_done(hass)
+    entry = MockConfigEntry(domain="energy_bill", data={"import_stat": "sensor.grid"})
+    entry.add_to_hass(hass)
+    hass.config_entries.async_add_subentry(
+        entry,
+        ConfigSubentry(
+            data={"valid_from": "2030-01-01", "buy": 0.3, "sell": 0, "base_year": 0},
+            subentry_type="tariff",
+            title="tariff",
+            unique_id=None,
+        ),
+    )
+    coordinator = EnergyBillCoordinator(hass, entry)
+    await coordinator.async_refresh()
+    await async_wait_recording_done(hass)
+    statistic_id = f"energy_bill:{entry.entry_id.lower()}_supplier_cost"
+
+    def read():
+        return statistics_during_period(
+            hass,
+            datetime(2030, 2, 28, 18, tzinfo=UTC),
+            datetime(2030, 3, 2, tzinfo=UTC),
+            {statistic_id},
+            "hour",
+            None,
+            {"mean"},
+        )
+
+    rows = (await get_instance(hass).async_add_executor_job(read))[statistic_id]
+    assert len(rows) == 1
+    assert datetime.fromtimestamp(rows[0]["start"], UTC) == datetime(
+        2030, 2, 28, 19, tzinfo=UTC
+    )
